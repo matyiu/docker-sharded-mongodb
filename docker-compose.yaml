@@ -1,0 +1,114 @@
+version: "3"
+
+services:
+
+  # SHARD SERVERS
+  shard0-replica0:
+    image: mongo:6.0
+    command: mongod --port 27017 --shardsvr --replSet shard0
+    networks:
+      internal:
+        aliases:
+          - shard0-replica0
+    volumes:
+      - shard0-replica0:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: always
+    links:
+        - shard0-replica1
+  shard0-replica1:
+    image: mongo:6.0
+    command: mongod --port 27017 --shardsvr --replSet shard0
+    networks:
+      internal:
+        aliases:
+          - shard0-replica1
+    volumes:
+      - shard0-replica1:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: always
+  shard1-replica0:
+    image: mongo:6.0
+    command: mongod --port 27017 --shardsvr --replSet shard1
+    networks:
+      internal:
+        aliases:
+          - shard1-replica0
+    volumes:
+      - shard1-replica0:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: always
+    links:
+        - shard1-replica1
+  shard1-replica1:
+    image: mongo:6.0
+    command: mongod --port 27017 --shardsvr --replSet shard1
+    networks:
+      internal:
+        aliases:
+          - shard1-replica1
+    volumes:
+      - shard1-replica1:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: always
+
+  # CONFIG SERVERS
+  config01:
+    image: mongo:6.0
+    command: mongod --port 27017 --configsvr --replSet config
+    networks:
+      internal:
+        aliases:
+          - config01
+    volumes:
+      - config01:/data
+    links:
+        - shard0-replica0
+        - shard1-replica0
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: always
+
+  # ROUTERS
+  router1:
+    image: mongo:6.0
+    command: mongos --port 27017 --configdb config/config01:27017 --bind_ip_all
+    ports:
+      - 27017:27017
+    restart: always
+    volumes:
+      - router1:/data
+    networks:
+      internal:
+        aliases:
+          - router1
+
+networks:
+  internal:
+
+volumes:
+  # Shards
+  shard0-replica0:
+  shard0-replica1:
+  shard1-replica0:
+  shard1-replica1:
+
+  # Configs
+  config01:
+
+  # Routers
+  router1:
